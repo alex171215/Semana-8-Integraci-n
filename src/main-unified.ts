@@ -36,7 +36,8 @@ async function startUnified() {
   try {
     const productosApp = await NestFactory.create(ProductosAppModule, { logger: ['warn', 'error', 'log'] });
     productosApp.enableCors();
-    await productosApp.listen(3000);
+    const pPort = Number(process.env.PRODUCTOS_PORT) || 3000;
+    await productosApp.listen(pPort);
     console.log('✅ [Microservicio REST] nestjs-productos-api escuchando en http://localhost:3000');
   } catch (err: any) {
     console.log('⚠️ [Microservicio REST] Puerto 3000 ya ocupado o delegado:', err.message);
@@ -46,7 +47,8 @@ async function startUnified() {
   try {
     const bffApp = await NestFactory.create(BffModule, { logger: ['warn', 'error', 'log'] });
     bffApp.enableCors();
-    await bffApp.listen(3001);
+    const bPort = Number(process.env.BFF_PORT) || 3001;
+    await bffApp.listen(bPort);
     console.log('✅ [Microservicio BFF]  nestjs-bff-productos escuchando en http://localhost:3001');
   } catch (err: any) {
     console.log('⚠️ [Microservicio BFF] Puerto 3001 ya ocupado o delegado:', err.message);
@@ -127,7 +129,8 @@ async function startUnified() {
     res.setHeader('X-Correlation-Id', correlationId);
 
     try {
-      const targetUrl = `http://localhost:3000${req.url}`;
+      const pPort = process.env.PRODUCTOS_PORT || '3000';
+      const targetUrl = `http://localhost:${pPort}${req.url}`;
       console.log(`[Kong Gateway :8000] Proxy hacia ${targetUrl} | Inyectando X-Correlation-Id: ${correlationId}`);
       
       const upstreamRes = await axios({
@@ -160,7 +163,8 @@ async function startUnified() {
     res.setHeader('X-Correlation-Id', correlationId);
 
     try {
-      const targetUrl = `http://localhost:3001${req.url}`;
+      const bPort = process.env.BFF_PORT || '3001';
+      const targetUrl = `http://localhost:${bPort}${req.url}`;
       console.log(`[Kong Gateway :8000] Proxy Aggregator hacia ${targetUrl} | CID: ${correlationId}`);
 
       const upstreamRes = await axios({
