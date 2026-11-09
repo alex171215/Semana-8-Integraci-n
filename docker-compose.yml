@@ -1,0 +1,58 @@
+version: "3.8"
+
+networks:
+  kong-net:
+    driver: bridge
+
+services:
+  kong:
+    image: kong:3.6
+    container_name: kong-gateway
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/kong.yml
+      KONG_PROXY_LISTEN: "0.0.0.0:8000"
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+    volumes:
+      - ./kong-gateway/kong.yml:/kong/kong.yml
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    networks:
+      - kong-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - productos-api
+      - bff-api
+
+  productos-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: productos-api
+    environment:
+      PORT: 3000
+      SERVICE_TYPE: productos
+    ports:
+      - "3000:3000"
+    networks:
+      - kong-net
+
+  bff-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: bff-api
+    environment:
+      PORT: 3001
+      SERVICE_TYPE: bff
+      PRODUCTOS_REST_URL: http://productos-api:3000
+    ports:
+      - "3001:3001"
+    networks:
+      - kong-net
+    depends_on:
+      - productos-api

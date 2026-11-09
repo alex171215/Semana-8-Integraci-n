@@ -1,0 +1,22 @@
+_format_version: "3.0"
+services:
+  - name: productos-service
+    url: http://host.docker.internal:3000
+    routes:
+      - name: productos-route
+        paths: ["/productos"]
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 5
+          policy: local
+      - name: request-transformer
+        config:
+          add:
+            headers: ["X-Correlation-Id:kong-generado"]
+
+  - name: bff-productos-service
+    url: http://host.docker.internal:3001
+    routes:
+      - name: bff-productos-route
+        paths: ["/productos-completos"]

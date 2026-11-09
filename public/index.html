@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Semana 8 · Kong Gateway & Microservicios Suite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #121827;
+      --border: #1f293d;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --accent: #00d2ff;
+      --kong-green: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: rgba(18, 24, 39, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 800;
+      font-size: 1.25rem;
+      background: linear-gradient(135deg, #00d2ff 0%, #3b82f6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .badge {
+      background: #1e293b;
+      color: #94a3b8;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      border: 1px solid var(--border);
+      font-family: var(--font-mono);
+    }
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--kong-green);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 0.35rem 0.8rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--kong-green);
+      box-shadow: 0 0 8px var(--kong-green);
+    }
+    main {
+      flex: 1;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+    @media (max-width: 968px) {
+      main { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: #fff;
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 0.75rem 1.25rem;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+    }
+    button:hover { background: var(--primary-hover); transform: translateY(-2px); }
+    button.btn-danger { background: var(--danger); }
+    button.btn-danger:hover { background: #dc2626; }
+    button.btn-accent { background: #0891b2; }
+    button.btn-accent:hover { background: #06b6d4; }
+    .console-box {
+      background: #060911;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: #38bdf8;
+      max-height: 380px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .rate-bar-container {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      margin-top: 0.5rem;
+    }
+    .rate-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      color: #64748b;
+    }
+    .rate-dot.active {
+      background: var(--kong-green);
+      color: #fff;
+      border-color: var(--kong-green);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+    }
+    .rate-dot.blocked {
+      background: var(--danger);
+      color: #fff;
+      border-color: var(--danger);
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+      animation: pulse 1s infinite alternate;
+    }
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.15); }
+    }
+    .links-bar {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+    a.action-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-weight: 600;
+    }
+    a.action-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span>🦍 Kong Gateway & BFF Suite</span>
+      <span class="badge">Semana 8 · DB-less</span>
+    </div>
+    <div class="links-bar">
+      <a href="/workshop" target="_blank" class="action-link">📖 Guía del Taller</a>
+      <a href="/status" target="_blank" class="action-link">📊 Kong Status</a>
+      <a href="/api/health" target="_blank" class="action-link">❤️ Health</a>
+      <div class="status-pill">
+        <span class="dot"></span>
+        <span>Gateway Activo (:8000)</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Columna 1: Acciones Interactivas del Laboratorio -->
+    <section class="card">
+      <div class="card-title">🧪 Pasos Interactivos del Taller</div>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">
+        Ejecuta las pruebas directas sobre Kong Gateway para verificar el enrutamiento transparente, políticas de tráfico y agregación de microservicios:
+      </p>
+
+      <div class="btn-group">
+        <button onclick="probarProxySimple()">
+          <span>🔀 Paso 3: Proxy /productos</span>
+        </button>
+        <button class="btn-danger" onclick="probarRateLimiting()">
+          <span>⚡ Paso 4: Ráfaga 6 Requests (429)</span>
+        </button>
+        <button class="btn-accent" onclick="probarTrazabilidad()">
+          <span>🏷️ Paso 5: Trazabilidad X-Correlation-Id</span>
+        </button>
+        <button onclick="probarBffAggregator()">
+          <span>🧩 Paso 7: Aggregator REST + GraphQL</span>
+        </button>
+      </div>
+
+      <!-- Monitor visual de Rate Limiting -->
+      <div style="margin-top: 1rem; padding: 1rem; background: #0c1220; border-radius: 10px; border: 1px solid var(--border);">
+        <div style="font-size: 0.85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+          <span>Monitor de Ventana de Rate Limiting (5 req / min)</span>
+          <span id="rate-counter-text" style="color: var(--text-muted);">0 / 5 consumidos</span>
+        </div>
+        <div class="rate-bar-container">
+          <div id="dot-1" class="rate-dot">1</div>
+          <div id="dot-2" class="rate-dot">2</div>
+          <div id="dot-3" class="rate-dot">3</div>
+          <div id="dot-4" class="rate-dot">4</div>
+          <div id="dot-5" class="rate-dot">5</div>
+          <div id="dot-6" class="rate-dot" title="Peticion 6: Bloqueada con 429">429</div>
+        </div>
+      </div>
+
+      <!-- Arquitectura de Enrutamiento -->
+      <div style="margin-top: 0.5rem; font-size: 0.82rem; color: #94a3b8; line-height: 1.5;">
+        <strong>Endpoints Mapeados en Kong:</strong><br/>
+        • <code>GET /productos</code> ➔ Upstream REST (puerto 3000)<br/>
+        • <code>GET /productos-completos/:id</code> ➔ Upstream BFF Aggregator (puerto 3001)<br/>
+        • <code>X-Correlation-Id</code> inyectado automáticamente en cada salto.
+      </div>
+    </section>
+
+    <!-- Columna 2: Consola de Salida HTTP en Tiempo Real -->
+    <section class="card">
+      <div class="card-title">
+        <span>📟 Consola de Respuesta del Gateway</span>
+        <button style="padding: 0.25rem 0.6rem; font-size: 0.75rem; margin-left: auto;" onclick="limpiarConsola()">Limpiar</button>
+      </div>
+      <div id="console-output" class="console-box">Presiona uno de los botones de la izquierda para enviar peticiones a través de Kong Gateway (:8000)...</div>
+    </section>
+  </main>
+
+  <script>
+    const output = document.getElementById('console-output');
+    let requestCount = 0;
+
+    function log(title, data, status = 200) {
+      const time = new Date().toLocaleTimeString();
+      const statusColor = status === 429 ? '#ef4444' : status === 200 ? '#10b981' : '#38bdf8';
+      output.innerHTML = `<span style="color: #64748b;">[${time}]</span> <strong style="color: ${statusColor};">${title} (HTTP ${status})</strong>\n` +
+        JSON.stringify(data, null, 2) + '\n\n' + output.innerHTML;
+    }
+
+    function limpiarConsola() {
+      output.innerText = 'Consola limpia. Listo para nuevas peticiones.';
+      for (let i = 1; i <= 6; i++) {
+        document.getElementById(`dot-${i}`).className = 'rate-dot';
+      }
+      document.getElementById('rate-counter-text').innerText = '0 / 5 consumidos';
+      requestCount = 0;
+    }
+
+    async function probarProxySimple() {
+      try {
+        const res = await fetch('/productos');
+        const data = await res.json();
+        log('Paso 3: GET /productos vía Kong Gateway', data, res.status);
+      } catch (err) {
+        log('Error al conectar con Kong', { error: err.message }, 500);
+      }
+    }
+
+    async function probarRateLimiting() {
+      limpiarConsola();
+      output.innerHTML = '⚡ Enviando ráfaga consecutiva de 6 peticiones al Gateway...\n\n';
+      
+      for (let i = 1; i <= 6; i++) {
+        await new Promise(r => setTimeout(r, 200));
+        try {
+          const res = await fetch('/productos');
+          const data = await res.json();
+          const dot = document.getElementById(`dot-${i}`);
+          
+          if (res.status === 429) {
+            dot.className = 'rate-dot blocked';
+            document.getElementById('rate-counter-text').innerText = 'Límite Excedido (6ª petición rechazada)';
+            log(`Petición #${i} Bloqueada por Rate-Limiting`, data, 429);
+          } else {
+            dot.className = 'rate-dot active';
+            document.getElementById('rate-counter-text').innerText = `${i} / 5 consumidos`;
+            log(`Petición #${i} Permitida`, { id: data.data?.[0]?.id, status: '200 OK' }, 200);
+          }
+        } catch (err) {
+          log(`Petición #${i} Error`, { error: err.message }, 500);
+        }
+      }
+    }
+
+    async function probarTrazabilidad() {
+      try {
+        const res = await fetch('/productos/1');
+        const data = await res.json();
+        const cidHeader = res.headers.get('x-correlation-id') || data.xCorrelationId || data.trazabilidad?.xCorrelationId;
+        log('Paso 5: Trazabilidad Distribuida (Header Inyectado)', {
+          'Header-X-Correlation-Id': cidHeader,
+          'PayloadRecibido': data
+        }, res.status);
+      } catch (err) {
+        log('Error de Trazabilidad', { error: err.message }, 500);
+      }
+    }
+
+    async function probarBffAggregator() {
+      try {
+        const res = await fetch('/productos-completos/1');
+        const data = await res.json();
+        log('Paso 7: Patrón BFF Aggregator (REST + GraphQL combinados)', data, res.status);
+      } catch (err) {
+        log('Error en Aggregator', { error: err.message }, 500);
+      }
+    }
+  </script>
+</body>
+</html>

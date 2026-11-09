@@ -1,0 +1,54 @@
+name: CI/CD Pipeline - Kong Gateway & Microservicios Suite (Semana 8)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  audit-and-test:
+    name: Validacion Sintactica, Pruebas Unitarias y Auditoria de Contratos
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Configurar Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📦 Instalar dependencias
+        run: npm install
+
+      - name: 🛡️ Validar configuracion declarativa kong.yml
+        run: npm run validate:kong
+
+      - name: 🏗️ Compilar microservicios TypeScript
+        run: npm run build
+
+      - name: 🧪 Ejecutar Suite de Pruebas Automatizadas (Jest)
+        run: npm test
+
+  deploy-to-render:
+    name: Despliegue Continuo en Render
+    needs: audit-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚀 Notificar Hook de Despliegue en Render
+        env:
+          RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -n "$RENDER_HOOK" ]; then
+            echo "Disparando despliegue hacia Render..."
+            curl -f -X POST "$RENDER_HOOK"
+            echo "✅ Despliegue notificado a Render exitosamente."
+          else
+            echo "ℹ️ Secreto RENDER_DEPLOY_HOOK_URL no configurado aun. Configuralo en GitHub Settings -> Secrets para despliegue automatico."
+          fi

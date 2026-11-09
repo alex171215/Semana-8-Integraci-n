@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: semana-8-kong-bff-suite
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8000
+      - key: PRODUCTOS_PORT
+        value: 3000
+      - key: BFF_PORT
+        value: 3001

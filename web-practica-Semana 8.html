@@ -1,0 +1,661 @@
+<title>Semana 8 · Kong Gateway</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#f4f2ed; --surface:#ffffff; --surface-2:#eae6dc;
+    --ink:#1b2630; --ink-soft:#5b6970;
+    --accent:#1f7a6c; --accent-ink:#0f4a41; --accent-soft:#dcefea;
+    --amber:#a85a26; --amber-soft:#f3e3d3;
+    --danger:#a13f3f; --danger-soft:#f4dede;
+    --line: rgba(27,38,48,.14);
+    --radius:10px; --shadow:0 1px 2px rgba(27,38,48,.06);
+    --term-bg:#161b1e; --term-ink:#d7e0e0; --term-accent:#7fd9c4;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#10161c; --surface:#161e25; --surface-2:#1c252c;
+      --ink:#e7ecec; --ink-soft:#9fb0b6;
+      --accent:#4fc3ae; --accent-ink:#bdeee2; --accent-soft: rgba(79,195,174,.16);
+      --amber:#e2a164; --amber-soft: rgba(226,161,100,.16);
+      --danger:#e58080; --danger-soft: rgba(229,128,128,.14);
+      --line: rgba(231,236,236,.14); --shadow:0 1px 2px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#10161c; --surface:#161e25; --surface-2:#1c252c;
+    --ink:#e7ecec; --ink-soft:#9fb0b6;
+    --accent:#4fc3ae; --accent-ink:#bdeee2; --accent-soft: rgba(79,195,174,.16);
+    --amber:#e2a164; --amber-soft: rgba(226,161,100,.16);
+    --danger:#e58080; --danger-soft: rgba(229,128,128,.14);
+    --line: rgba(231,236,236,.14); --shadow:0 1px 2px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:'Source Serif 4',Georgia,serif; line-height:1.62;}
+  h1,h2,h3,h4,button,.mono,.badge,nav{font-family:'Manrope',system-ui,sans-serif;}
+  code,pre,.mono-num{font-family:'JetBrains Mono',ui-monospace,monospace;}
+  h1,h2,h3,h4{text-wrap:balance; font-weight:800; letter-spacing:-.01em; color:var(--ink);}
+  a{color:var(--accent-ink);}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  .topbar{position:sticky; top:0; z-index:5; background:var(--surface); border-bottom:1px solid var(--line); padding:12px clamp(16px,5vw,40px);}
+  .topbar-row{display:flex; align-items:center; justify-content:space-between; gap:16px; max-width:780px; margin:0 auto;}
+  .topbar .kicker{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--accent-ink); font-weight:700;}
+  .topbar h1{font-size:16px; margin:2px 0 0;}
+  .progress-wrap{display:flex; align-items:center; gap:10px; font-size:11px; color:var(--ink-soft);}
+  .progress-track{width:110px; height:6px; border-radius:4px; background:var(--surface-2); overflow:hidden;}
+  .progress-fill{height:100%; width:0%; background:var(--accent); transition:width .25s;}
+  .theme-btn{font-size:11.5px; font-weight:700; border:1px solid var(--line); background:var(--surface-2); color:var(--ink); padding:6px 10px; border-radius:8px; cursor:pointer;}
+  .theme-btn:hover{border-color:var(--accent);}
+
+  main{padding:44px clamp(16px,5vw,40px) 100px;}
+  .doc{max-width:780px; margin:0 auto;}
+
+  header.hero{margin-bottom:28px;}
+  .hero .kicker{font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent-ink); font-weight:700; display:flex; gap:8px; align-items:center;}
+  .hero .kicker::before{content:""; width:22px; height:1.5px; background:var(--accent);}
+  .hero h1{font-size:clamp(26px,4vw,34px); margin:10px 0 12px;}
+  .hero p{font-family:'Manrope',sans-serif; color:var(--ink-soft); font-size:14px; max-width:64ch; margin:0 0 14px;}
+  .meta-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .badge{font-size:11px; font-weight:700; padding:5px 10px; border-radius:100px; background:var(--surface-2); color:var(--ink-soft); border:1px solid var(--line);}
+
+  .rule-box{font-family:'Manrope',sans-serif; font-size:13px; background:var(--accent-soft); border:1px solid var(--accent); border-radius:9px; padding:14px 16px; margin-bottom:16px; color:var(--ink);}
+  .rule-box strong{color:var(--accent-ink);}
+  .note-box{font-family:'Manrope',sans-serif; font-size:13px; background:var(--surface-2); border:1px dashed var(--line); border-radius:9px; padding:14px 16px; margin-bottom:28px; color:var(--ink-soft);}
+  .note-box strong{color:var(--ink);}
+
+  .checklist{list-style:none; margin:18px 0; padding:0; display:grid; gap:8px;}
+  .checklist li{display:flex; gap:10px; align-items:flex-start; font-family:'Manrope',sans-serif; font-size:13.5px;}
+  .checklist input{margin-top:3px; width:16px; height:16px; accent-color:var(--accent); flex:none;}
+
+  .stepper{display:flex; align-items:flex-start; gap:0; margin:8px 0 40px; overflow-x:auto; padding-bottom:4px;}
+  .stepper-item{flex:1; min-width:62px; display:flex; flex-direction:column; align-items:center; gap:6px; position:relative; background:none; border:none; padding:0; cursor:pointer; font-family:'Manrope',sans-serif;}
+  .stepper-item::after{content:""; position:absolute; top:14px; left:50%; width:100%; height:2px; background:var(--line); z-index:0;}
+  .stepper-item:last-child::after{display:none;}
+  .stepper-item.done::after{background:var(--accent);}
+  .stepper-num{position:relative; z-index:1; width:28px; height:28px; border-radius:50%; background:var(--surface); border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-weight:600; font-size:11.5px; color:var(--ink-soft);}
+  .stepper-item.current .stepper-num{border-color:var(--accent); color:var(--accent-ink);}
+  .stepper-item.done .stepper-num{background:var(--accent); border-color:var(--accent); color:var(--surface);}
+  .stepper-item.locked .stepper-num{opacity:.5;}
+  .stepper-label{font-size:9px; text-align:center; color:var(--ink-soft); line-height:1.2; max-width:70px;}
+  .stepper-item.current .stepper-label{color:var(--ink); font-weight:700;}
+
+  section.step{border-left:2px solid var(--line); padding-left:26px; margin-left:6px; position:relative; margin-bottom:22px; scroll-margin-top:90px; transition:border-color .2s, opacity .2s;}
+  section.step::before{content: attr(data-n); position:absolute; left:-19px; top:-2px; width:36px; height:36px; border-radius:50%; background:var(--surface); border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-weight:600; font-size:13px; color:var(--ink-soft);}
+  section.step.current{border-left-color:var(--accent);}
+  section.step.current::before{border-color:var(--accent); color:var(--accent-ink);}
+  section.step.done::before{background:var(--accent); border-color:var(--accent); color:var(--surface); content:"✓";}
+  section.step.locked{opacity:.5;}
+  section.step .eyebrow{font-size:11.5px; font-weight:700; color:var(--accent-ink); letter-spacing:.05em; display:block; margin-bottom:4px;}
+  section.step h2{font-size:19px; margin:0 0 10px;}
+  section.step h4{font-size:13.5px; margin:16px 0 6px;}
+  section.step p{margin:0 0 12px;}
+  section.step ul, section.step ol{margin:0 0 12px; padding-left:20px;}
+  section.step li{margin-bottom:6px;}
+
+  .verify-box{background:var(--surface); border:1px solid var(--accent); border-radius:9px; padding:14px 16px; margin-top:16px;}
+  .verify-box .vt{font-family:'Manrope',sans-serif; font-weight:700; font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--accent-ink); margin-bottom:8px; display:flex; align-items:center; gap:6px;}
+  .verify-box .vt::before{content:"✔";}
+  .verify-list{list-style:none; margin:0; padding:0; display:grid; gap:7px;}
+  .verify-list li{display:flex; gap:9px; align-items:flex-start; font-family:'Manrope',sans-serif; font-size:12.5px;}
+  .verify-list input{margin-top:2px; width:15px; height:15px; accent-color:var(--accent); flex:none;}
+
+  .step-actions{display:flex; align-items:center; gap:12px; margin-top:16px; padding-top:16px; border-top:1px dashed var(--line); flex-wrap:wrap;}
+  .step-done-btn{font-family:'Manrope',sans-serif; font-weight:700; font-size:12.5px; padding:9px 15px; border-radius:8px; border:1px solid var(--accent); background:var(--accent-soft); color:var(--accent-ink); cursor:pointer;}
+  .step-done-btn:hover:not(:disabled){background:var(--accent); color:var(--surface);}
+  .step-done-btn.on{background:var(--accent); color:var(--surface);}
+  .step-done-btn:disabled{opacity:.4; cursor:not-allowed;}
+  .step-done-note{font-family:'Manrope',sans-serif; font-size:11.5px; color:var(--ink-soft);}
+
+  .term{background:var(--term-bg); color:var(--term-ink); border-radius:9px; overflow:hidden; margin:14px 0; box-shadow:var(--shadow); border:1px solid var(--line);}
+  .term-bar{display:flex; align-items:center; justify-content:space-between; padding:8px 14px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#8fa0a0; background:rgba(255,255,255,.03); border-bottom:1px solid rgba(255,255,255,.06);}
+  .term-copy{background:transparent; border:1px solid rgba(255,255,255,.18); color:#cfe0e0; font-size:10.5px; padding:3px 8px; border-radius:6px; cursor:pointer; font-family:'Manrope',sans-serif;}
+  .term-copy:hover{border-color:var(--term-accent); color:var(--term-accent);}
+  .term pre{margin:0; padding:14px 16px; overflow-x:auto; font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.65;}
+  .term .k{color:var(--term-accent);}
+  .term .cm{color:#8fa0a0;}
+
+  pre.code-block{background:var(--surface-2); border:1px solid var(--line); border-radius:8px; padding:14px 16px; overflow-x:auto; font-size:12.3px; line-height:1.6; margin:10px 0;}
+
+  .callout{border-radius:var(--radius); padding:16px 18px; margin:16px 0; font-family:'Manrope',sans-serif; font-size:13.5px; border:1px solid;}
+  .callout.think{background:var(--surface-2); border-color:var(--line);}
+  .callout.warn{background:var(--amber-soft); border-color:var(--amber);}
+  .callout h4{margin:0 0 8px; font-size:12px; text-transform:uppercase; letter-spacing:.05em;}
+  .callout.think h4{color:var(--ink-soft);}
+  .callout.warn h4{color:var(--amber);}
+  .callout ul,.callout ol{margin:0; padding-left:18px;}
+  .callout li{margin-bottom:5px;}
+
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-family:'Manrope',sans-serif; font-size:13px;}
+  caption{caption-side:top; text-align:left; font-weight:700; font-size:12.5px; color:var(--ink-soft); margin-bottom:8px;}
+  th,td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--line);}
+  th{font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft);}
+  td code{font-size:12px;}
+
+  .ai-box{border:1px solid var(--amber); background:var(--amber-soft); border-radius:var(--radius); padding:18px 20px; margin:18px 0;}
+  .ai-box h4{margin:0 0 10px; font-size:12.5px; color:var(--amber); text-transform:uppercase; letter-spacing:.05em; display:flex; gap:7px; align-items:center;}
+  .ai-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; font-family:'Manrope',sans-serif; font-size:13px;}
+  @media(max-width:600px){.ai-grid{grid-template-columns:1fr;}}
+  .ai-grid h5{margin:0 0 6px; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em;}
+  .ai-grid .yes h5{color:var(--accent-ink);}
+  .ai-grid .no h5{color:var(--danger);}
+  .ai-grid ul{margin:0; padding-left:16px;}
+
+  .declaration{font-family:'JetBrains Mono',monospace; font-size:12px; background:var(--surface-2); border:1px dashed var(--line); border-radius:8px; padding:14px 16px; margin-top:10px; white-space:pre-wrap;}
+
+  .final-check{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:20px 22px; box-shadow:var(--shadow);}
+  footer.doc-foot{margin-top:40px; padding-top:20px; border-top:1px solid var(--line); font-family:'Manrope',sans-serif; font-size:12.5px; color:var(--ink-soft); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;}
+</style>
+
+<div class="topbar">
+  <div class="topbar-row">
+    <div>
+      <div class="kicker">Semana 8 · Práctica</div>
+      <h1>Kong Gateway enrutando microservicios NestJS</h1>
+    </div>
+    <div class="progress-wrap">
+      <span id="progressLabel">0/10 pasos</span>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <button class="theme-btn" id="themeBtn" type="button">Sistema</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="doc">
+    <header class="hero">
+      <span class="kicker">Horas de práctica de laboratorio</span>
+      <h1>Levanta Kong Gateway DB-less y aplica rate-limiting + trazabilidad</h1>
+      <p>Vas a poner <strong>Kong Gateway</strong> (modo DB-less, declarativo) delante de tu API <code>nestjs-productos-api</code>, aplicar un límite de tasa real y propagar un encabezado de trazabilidad, y construir como reto un pequeño <strong>Aggregator</strong> NestJS que combina tu API REST con tu API GraphQL.</p>
+      <div class="meta-row">
+        <span class="badge">2.5 h laboratorio</span>
+        <span class="badge">Kong DB-less · Docker · NestJS</span>
+        <span class="badge">Continúa nestjs-productos-api (S1-2, S4)</span>
+      </div>
+    </header>
+
+    <div class="rule-box">
+      <strong>Regla de esta guía:</strong> sigue los pasos en orden, sin saltarte ninguno. El botón "Marcar paso completado" solo se activa cuando confirmas la Verificación del paso. El <strong>Paso 4</strong> (rate-limiting) es donde de verdad se siente el valor del Gateway — no lo apures.
+    </div>
+    <div class="note-box">
+      <strong>Nota:</strong> esta semana no tiene una versión previa en <code>contenido/</code> — se construyó desde el sílabo oficial, retomando los proyectos <code>nestjs-productos-api</code> (Semanas 1-2) y <code>nestjs-productos-graphql</code> (Semana 4) por continuidad.
+    </div>
+
+    <nav class="stepper" id="stepper" aria-label="Ruta paso a paso de Kong Gateway">
+      <button class="stepper-item" data-target="step0"><span class="stepper-num">0</span><span class="stepper-label">Entorno</span></button>
+      <button class="stepper-item" data-target="step1"><span class="stepper-num">1</span><span class="stepper-label">Levantar Kong</span></button>
+      <button class="stepper-item" data-target="step2"><span class="stepper-num">2</span><span class="stepper-label">Service/Route</span></button>
+      <button class="stepper-item" data-target="step3"><span class="stepper-num">3</span><span class="stepper-label">Probar Proxy</span></button>
+      <button class="stepper-item" data-target="step4"><span class="stepper-num">4</span><span class="stepper-label">Rate-limit</span></button>
+      <button class="stepper-item" data-target="step5"><span class="stepper-num">5</span><span class="stepper-label">Trazabilidad</span></button>
+      <button class="stepper-item" data-target="step6"><span class="stepper-num">6</span><span class="stepper-label">Con/sin Gateway</span></button>
+      <button class="stepper-item" data-target="step7"><span class="stepper-num">7</span><span class="stepper-label">Reto Aggregator</span></button>
+      <button class="stepper-item" data-target="step8"><span class="stepper-num">8</span><span class="stepper-label">Evidencia</span></button>
+      <button class="stepper-item" data-target="step9"><span class="stepper-num">9</span><span class="stepper-label">Entregar</span></button>
+    </nav>
+
+    <!-- PASO 0 -->
+    <section class="step" data-n="0" id="step0">
+      <span class="eyebrow">Paso 0</span>
+      <h2>Verificar el entorno y tener nestjs-productos-api corriendo</h2>
+      <ol>
+        <li>Confirma que tienes Docker y Docker Compose instalados.</li>
+        <li>Confirma que tienes <code>curl</code> o Postman disponible.</li>
+        <li>Arranca tu proyecto <code>nestjs-productos-api</code> de las Semanas 1-2.</li>
+      </ol>
+      <div class="term">
+        <div class="term-bar"><span>terminal</span><button class="term-copy" data-copy="docker --version
+docker compose version
+cd nestjs-productos-api
+npm run start:dev">Copiar</button></div>
+        <pre><span class="k">$</span> docker --version
+<span class="k">$</span> docker compose version
+<span class="k">$</span> cd nestjs-productos-api
+<span class="k">$</span> npm run start:dev</pre>
+      </div>
+      <div class="verify-box">
+        <div class="vt">Verificación del Paso 0</div>
+        <ul class="verify-list" data-step="step0">
+          <li><input type="checkbox" data-v="0"><span><code>docker --version</code> y <code>docker compose version</code> responden correctamente.</span></li>
+          <li><input type="checkbox" data-v="1"><span><code>curl http://localhost:3000/productos</code> devuelve el catálogo en JSON.</span></li>
+        </ul>
+      </div>
+      <div class="step-actions">
+        <button class="step-done-btn" data-step="step0" data-next="step1" disabled>✓ Marcar paso 0 completado → ir al paso 1</button>
+        <span class="step-done-note">Marca ambas casillas para continuar.</span>
+      </div>
+    </section>
+
+    <!-- PASO 1 -->
+    <section class="step" data-n="1" id="step1">
+      <span class="eyebrow">Paso 1</span>
+      <h2>Levantar Kong en modo DB-less con Docker Compose</h2>
+      <p>Crea una carpeta <code>kong-gateway/</code> con este <code>docker-compose.yml</code>:</p>
+      <pre class="code-block">version: "3.8"
+services:
+  kong:
+    image: kong:3.6
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/kong.yml
+      KONG_PROXY_LISTEN: "0.0.0.0:8000"
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+    volumes:
+      - ./kong.yml:/kong/kong.yml
+    ports:
+      - "8000:8000"
+      - "8001:8001"</pre>
+      <p>Y un <code>kong.yml</code> vacío por ahora:</p>
+      <pre class="code-block">_format_version: "3.0"
+services: []</pre>
+      <div class="term">
+        <div class="term-bar"><span>terminal</span><button class="term-copy" data-copy="docker compose up -d">Copiar</button></div>
+        <pre><span class="k">$</span> docker compose up -d</pre>
+      </div>
+      <div class="verify-box">
+        <div class="vt">Verificación del Paso 1</div>
+        <ul class="verify-list" data-step="step1">
+          <li><input type="checkbox" data-v="0"><span><code>docker compose up -d</code> termina sin errores.</span></li>
+          <li><input type="checkbox" data-v="1"><span><code>curl http://localhost:8001/status</code> devuelve el estado de Kong.</span></li>
+        </ul>
+      </div>
+      <div class="step-actions">
+        <button class="step-done-btn" data-step="step1" data-next="step2" disabled>✓ Marcar paso 1 completado → ir al paso 2</button>
+        <span class="step-done-note">Marca ambas casillas para continuar.</span>
+      </div>
+    </section>
+
+    <!-- PASO 2 -->
+    <section class="step" data-n="2" id="step2">
+      <span class="eyebrow">Paso 2</span>
+      <h2>Definir el service y la route hacia tu API de Productos</h2>
+      <p>Edita <code>kong.yml</code>:</p>
+      <pre class="code-block">_format_version: "3.0"
+services:
+  - name: productos-service
+    url: http://host.docker.internal:3000
+    routes:
+      - name: productos-route
+        paths: ["/productos"]</pre>
+      <div class="callout think">
+        <h4>Piensa</h4>
+        <p style="margin:0;"><code>host.docker.internal</code> permite que el contenedor de Kong alcance servicios corriendo en tu máquina host, fuera de Docker. Si usas Linux sin Docker Desktop, puede que necesites la IP real del host.</p>
+      </div>
+      <div class="term">
+        <div class="term-bar"><span>terminal</span><button class="term-copy" data-copy="docker compose restart kong">Copiar</button></div>
+        <pre><span class="k">$</span> docker compose restart kong</pre>
+      </div>
+      <div class="verify-box">
+        <div class="vt">Verificación del Paso 2</div>
+        <ul class="verify-list" data-step="step2">
+          <li><input type="checkbox" data-v="0"><span><code>docker compose restart kong</code> no reporta errores.</span></li>
+          <li><input type="checkbox" data-v="1"><span>Puedo explicar la diferencia entre el campo <code>url</code> del service y <code>paths</code> de la route.</span></li>
+        </ul>
+      </div>
+      <div class="step-actions">
+        <button class="step-done-btn" data-step="step2" data-next="step3" disabled>✓ Marcar paso 2 completado → ir al paso 3</button>
+        <span class="step-done-note">Marca ambas casillas para continuar.</span>
+      </div>
+    </section>
+
+    <!-- PASO 3 -->
+    <section class="step" data-n="3" id="step3">
+      <span class="eyebrow">Paso 3</span>
+      <h2>Probar que Kong reenvía correctamente (Proxy simple)</h2>
+      <p>Compara la respuesta directa contra la respuesta a través de Kong:</p>
+      <div class="term">
+        <div class="term-bar"><span>terminal</span><button class="term-copy" data-copy="curl http://localhost:3000/productos
+curl http://localhost:8000/productos">Copiar</button></div>
+        <pre><span class="k">$</span> curl http://localhost:3000/productos
+<span class="k">$</span> curl http://localhost:8000/productos</pre>
+      </div>
+      <div class="verify-box">
+        <div class="vt">Verificación del Paso 3</div>
+        <ul class="verify-list" data-step="step3">
+          <li><input type="checkbox" data-v="0"><span><code>curl http://localhost:8000/productos</code> (vía Kong) devuelve el mismo JSON que el puerto 3000 directo.</span></li>
+        </ul>
+      </div>
+      <div class="step-actions">
+        <button class="step-done-btn" data-step="step3" data-next="step4" disabled>✓ Marcar paso 3 completado → ir al paso 4</button>
+        <span class="step-done-note">Marca la casilla para continuar.</span>
+      </div>
+    </section>
+
+    <!-- PASO 4 -->
+    <section class="step" data-n="4" id="step4">
+      <span class="eyebrow">Paso 4 — El corazón de la semana</span>
+      <h2>Aplicar el plugin rate-limiting</h2>
+      <p>Agrega el plugin en <code>kong.yml</code>:</p>
+      <pre class="code-block">_format_version: "3.0"
+services:
+  - name: productos-service
+    url: http://host.docker.internal:3000
+    routes:
+      - name: productos-route
+        paths: ["/productos"]
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 5
+          policy: local</pre>
+      <div class="term">
+        <div class="term-bar"><span>terminal</span><button class="term-copy" data-copy="docker compose restart kong
+for i in 1 2 3 4 5 6; do curl -s -o /dev/null -w &quot;%{http_code}\n&quot; http://localhost:8000/productos; done">Copiar</button></div>
+        <pre><span class="k">$</span> docker compose restart kong
+<span class="k">$</span> for i in 1 2 3 4 5 6; do curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8000/productos; done</pre>
+      </div>
+      <div class="verify-box">
+        <div class="vt">Verificación del Paso 4</div>
+        <ul class="verify-list" data-step="step4">
+          <li><input type="checkbox" data-v="0"><span>Las primeras 5 peticiones devuelven <code>200</code>.</span></li>
+          <li><input type="checkbox" data-v="1"><span>La 6ª petición (mismo minuto) devuelve <code>429 Too Many Requests</code>.</span></li>
+        </ul>
+      </div>
+      <div class="step-actions">
+        <button class="step-done-btn" data-step="step4" data-next="step5" disabled>✓ Marcar paso 4 completado → ir al paso 5</button>
+        <span class="step-done-note">No sigas sin haber visto el 429 real.</span>
+      </div>
+    </section>
+
+    <!-- PASO 5 -->
+    <section class="step" data-n="5" id="step5">
+      <span class="eyebrow">Paso 5</span>
+      <h2>Propagar un encabezado de trazabilidad (X-Correlation-Id)</h2>
+      <p>Agrega el plugin <code>request-transformer</code>:</p>
+      <pre class="code-block">    plugins:
+      - name: rate-limiting
+        config:
+          minute: 5
+          policy: local
+      - name: request-transformer
+        config:
+          add:
+            headers: ["X-Correlation-Id:kong-generado"]</pre>
+      <p>Reinicia Kong, envía una petición y agrega un log temporal en <code>nestjs-productos-api</code> que imprima <code>req.headers['x-correlation-id']</code>.</p>
+      <div class="term">
+        <div class="term-bar"><span>terminal</span><button class="term-copy" data-copy="docker compose restart kong
+curl -v http://localhost:8000/productos">Copiar</button></div>
+        <pre><span class="k">$</span> docker compose restart kong
+<span class="k">$</span> curl -v http://localhost:8000/productos</pre>
+      </div>
+      <div class="verify-box">
+        <div class="vt">Verificación del Paso 5</div>
+        <ul class="verify-list" data-step="step5">
+          <li><input type="checkbox" data-v="0"><span>Confirmé en la consola de nestjs-productos-api que el header X-Correlation-Id llegó, inyectado por Kong.</span></li>
+        </ul>
+      </div>
+      <div class="step-actions">
+        <button class="step-done-btn" data-step="step5" data-next="step6" disabled>✓ Marcar paso 5 completado → ir al paso 6</button>
+        <span class="step-done-note">Marca la casilla para continuar.</span>
+      </div>
+    </section>
+
+    <!-- PASO 6 -->
+    <section class="step" data-n="6" id="step6">
+      <span class="eyebrow">Paso 6</span>
+      <h2>Cierre parcial: comparar con y sin Gateway</h2>
+      <p>Detén temporalmente Kong y confirma que <code>nestjs-productos-api</code> sigue respondiendo directo en el puerto 3000, pero el 8000 ya no responde.</p>
+      <div class="term">
+        <div class="term-bar"><span>terminal</span><button class="term-copy" data-copy="docker compose stop kong
+curl http://localhost:3000/productos
+curl http://localhost:8000/productos
+docker compose start kong">Copiar</button></div>
+        <pre><span class="k">$</span> docker compose stop kong
+<span class="k">$</span> curl http://localhost:3000/productos
+<span class="k">$</span> curl http://localhost:8000/productos
+<span class="k">$</span> docker compose start kong</pre>
+      </div>
+      <div class="callout warn">
+        <h4>Punto único de fallo</h4>
+        <p style="margin:0;">Confirmaste en carne propia que Kong es, por diseño, un punto único de fallo para el tráfico externo — exactamente lo que advierte la teoría (§8.5).</p>
+      </div>
+      <div class="verify-box">
+        <div class="vt">Verificación del Paso 6</div>
+        <ul class="verify-list" data-step="step6">
+          <li><input type="checkbox" data-v="0"><span>Confirmé que sin Kong el puerto 8000 no responde pero el 3000 sí.</span></li>
+        </ul>
+      </div>
+      <div class="step-actions">
+        <button class="step-done-btn" data-step="step6" data-next="step7" disabled>✓ Marcar paso 6 completado → ir al paso 7</button>
+        <span class="step-done-note">Marca la casilla para continuar.</span>
+      </div>
+    </section>
+
+    <!-- PASO 7 -->
+    <section class="step" data-n="7" id="step7">
+      <span class="eyebrow">Paso 7 — Reto</span>
+      <h2>Patrón Aggregator/BFF: combinar REST + GraphQL</h2>
+      <p>Crea un proyecto nuevo <code>nestjs-bff-productos</code> con un endpoint que combine tu API REST y tu API GraphQL:</p>
+      <pre class="code-block">@Get('productos-completos/:id')
+async obtenerCompleto(@Param('id') id: string) {
+  const rest$ = this.http.get(`http://localhost:3000/productos/${id}`);
+  const restRes = await firstValueFrom(rest$);
+  // Si tienes la API GraphQL disponible, agrega aqui una segunda llamada
+  // y combina ambos resultados.
+  return { ...restRes.data, fuente: 'aggregator' };
+}</pre>
+      <p>Agrega la ruta adicional en <code>kong.yml</code>:</p>
+      <pre class="code-block">  - name: bff-productos-service
+    url: http://host.docker.internal:3001
+    routes:
+      - name: bff-productos-route
+        paths: ["/productos-completos"]</pre>
+      <div class="term">
+        <div class="term-bar"><span>terminal</span><button class="term-copy" data-copy="nest new nestjs-bff-productos">Copiar</button></div>
+        <pre><span class="k">$</span> nest new nestjs-bff-productos</pre>
+      </div>
+      <div class="verify-box">
+        <div class="vt">Verificación del Paso 7</div>
+        <ul class="verify-list" data-step="step7">
+          <li><input type="checkbox" data-v="0"><span><code>curl http://localhost:8000/productos-completos/1</code> devuelve una respuesta combinada.</span></li>
+          <li><input type="checkbox" data-v="1"><span>Puedo explicar por qué esto es un Aggregator y no un Proxy simple.</span></li>
+        </ul>
+      </div>
+      <div class="step-actions">
+        <button class="step-done-btn" data-step="step7" data-next="step8" disabled>✓ Marcar paso 7 completado → ir al paso 8</button>
+        <span class="step-done-note">Marca ambas casillas para continuar.</span>
+      </div>
+    </section>
+
+    <!-- PASO 8 -->
+    <section class="step" data-n="8" id="step8">
+      <span class="eyebrow">Paso 8</span>
+      <h2>Documentar evidencia y cerrar en la bitácora</h2>
+      <p>Documenta con capturas o salidas de consola:</p>
+      <ol>
+        <li>La evidencia del <code>429 Too Many Requests</code> del Paso 4.</li>
+        <li>La evidencia del header <code>X-Correlation-Id</code> recibido en el backend del Paso 5.</li>
+        <li>Una comparación por escrito: ¿qué ganó el sistema con Kong? ¿Qué overhead agregó?</li>
+      </ol>
+      <div class="verify-box">
+        <div class="vt">Verificación del Paso 8</div>
+        <ul class="verify-list" data-step="step8">
+          <li><input type="checkbox" data-v="0"><span>Las 3 evidencias/reflexiones están documentadas en mi bitácora.</span></li>
+        </ul>
+      </div>
+      <div class="step-actions">
+        <button class="step-done-btn" data-step="step8" data-next="step9" disabled>✓ Marcar paso 8 completado → ir al paso 9</button>
+        <span class="step-done-note">Marca la casilla para continuar.</span>
+      </div>
+    </section>
+
+    <!-- PASO 9 -->
+    <section class="step" data-n="9" id="step9">
+      <span class="eyebrow">Paso 9</span>
+      <h2>Documentar y subir tu trabajo</h2>
+      <div class="term">
+        <div class="term-bar"><span>terminal</span><button class="term-copy" data-copy="git add .
+git commit -m &quot;feat: Kong Gateway DB-less + rate-limiting + trazabilidad + BFF (Semana 8)&quot;">Copiar</button></div>
+        <pre><span class="k">$</span> git add .
+<span class="k">$</span> git commit -m "feat: Kong Gateway DB-less + rate-limiting + trazabilidad + BFF (Semana 8)"</pre>
+      </div>
+
+      <div class="ai-box">
+        <h4>🤖 Uso de IA en esta práctica</h4>
+        <div class="ai-grid">
+          <div class="yes"><h5>Permitido</h5><ul>
+            <li>Depurar un <code>kong.yml</code> que no carga (errores de indentación YAML).</li>
+            <li>Explicar un error de Docker o de la Admin API de Kong.</li>
+            <li>Revisar si el Aggregator del Paso 7 tiene sentido para el caso de uso.</li>
+          </ul></div>
+          <div class="no"><h5>No permitido</h5><ul>
+            <li>Pedir el kong.yml completo sin entender services/routes/plugins.</li>
+            <li>Aceptar que el rate-limiting "funciona" sin ver el 429 real.</li>
+            <li>Que la IA decida si tu Aggregator es "bueno" sin verificarlo tú mismo.</li>
+          </ul></div>
+        </div>
+        <div class="declaration">### Declaración de uso de IA
+- Herramienta(s):
+- Nivel de uso:
+- Qué se le pidió:
+- Qué se modificó/verificó manualmente:</div>
+      </div>
+
+      <div class="final-check">
+        <h4 style="margin-top:0;">Checklist de salida</h4>
+        <ul class="checklist" id="exitChecklist">
+          <li><input type="checkbox" data-key="kongyml"><span><code>kong.yml</code> versionado, con service, route, rate-limiting y request-transformer.</span></li>
+          <li><input type="checkbox" data-key="ratelimit"><span>Confirmé que el rate-limit se dispara correctamente (429 en la 6ª petición).</span></li>
+          <li><input type="checkbox" data-key="traza"><span>Confirmé que el header de trazabilidad llega al backend.</span></li>
+          <li><input type="checkbox" data-key="aggregator"><span>Construí nestjs-bff-productos combinando al menos dos fuentes de datos.</span></li>
+          <li><input type="checkbox" data-key="comparacion"><span>Documenté la comparación con/sin Gateway en mi bitácora.</span></li>
+          <li><input type="checkbox" data-key="git"><span>Hice commit del proyecto.</span></li>
+        </ul>
+      </div>
+
+      <div class="step-actions">
+        <button class="step-done-btn" data-step="step9" disabled>✓ Marcar paso 9 completado</button>
+        <span class="step-done-note">Marca al menos la casilla de verificación abajo.</span>
+      </div>
+      <div class="verify-box" style="margin-top:14px;">
+        <div class="vt">Verificación del Paso 9</div>
+        <ul class="verify-list" data-step="step9">
+          <li><input type="checkbox" data-v="0"><span>Completé el checklist de salida arriba.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <footer class="doc-foot">
+      <span>Integración de Sistemas · Semana 8 de 16</span>
+      <a href="web-teoria.html">← Volver a la teoría</a>
+    </footer>
+  </div>
+</main>
+
+<script>
+(function(){
+  const root = document.documentElement;
+  const btn = document.getElementById('themeBtn');
+  const labels = {system:'Sistema', light:'Claro', dark:'Oscuro'};
+  let mode='system';
+  try{ mode = localStorage.getItem('s01-theme') || 'system'; }catch(e){}
+  function apply(){ if(mode==='system'){root.removeAttribute('data-theme');} else {root.setAttribute('data-theme',mode);} btn.textContent = labels[mode]; }
+  btn.addEventListener('click', ()=>{ mode = mode==='system'?'light':mode==='light'?'dark':'system'; try{localStorage.setItem('s01-theme',mode);}catch(e){} apply(); });
+  apply();
+})();
+
+document.querySelectorAll('.term-copy').forEach(btn=>{
+  btn.addEventListener('click', async ()=>{
+    const text = btn.getAttribute('data-copy');
+    try{ await navigator.clipboard.writeText(text); btn.textContent='¡Copiado!'; setTimeout(()=>btn.textContent='Copiar',1200); }
+    catch(e){ btn.textContent='No se pudo copiar'; setTimeout(()=>btn.textContent='Copiar',1200); }
+  });
+});
+
+(function(){
+  let state = {};
+  try{ state = JSON.parse(localStorage.getItem('s08-practica-checklist')||'{}'); }catch(e){}
+  const boxes = document.querySelectorAll('#exitChecklist input[type="checkbox"]');
+  function save(){ try{ localStorage.setItem('s08-practica-checklist', JSON.stringify(state)); }catch(e){} }
+  boxes.forEach(b=>{
+    const key = 'exitChecklist:' + b.dataset.key;
+    if(state[key]) b.checked = true;
+    b.addEventListener('change', ()=>{ state[key]=b.checked; save(); });
+  });
+})();
+
+(function(){
+  const STEPS = ['step0','step1','step2','step3','step4','step5','step6','step7','step8','step9'];
+  const stepperItems = Array.from(document.querySelectorAll('.stepper-item'));
+  const sections = STEPS.map(id => document.getElementById(id));
+
+  let doneState = {};
+  let verifyState = {};
+  try{ doneState = JSON.parse(localStorage.getItem('s08-practica-steps')||'{}'); }catch(e){}
+  try{ verifyState = JSON.parse(localStorage.getItem('s08-practica-verify')||'{}'); }catch(e){}
+
+  function saveDone(){ try{ localStorage.setItem('s08-practica-steps', JSON.stringify(doneState)); }catch(e){} }
+  function saveVerify(){ try{ localStorage.setItem('s08-practica-verify', JSON.stringify(verifyState)); }catch(e){} }
+
+  function firstNotDone(){ const idx = STEPS.findIndex(id => !doneState[id]); return idx === -1 ? STEPS.length - 1 : idx; }
+
+  document.querySelectorAll('.verify-list input[type="checkbox"]').forEach(cb=>{
+    const stepId = cb.closest('.verify-list').dataset.step;
+    const key = stepId + ':' + cb.dataset.v;
+    if(verifyState[key]) cb.checked = true;
+    cb.addEventListener('change', ()=>{
+      verifyState[key] = cb.checked;
+      saveVerify();
+      updateStepButton(stepId);
+    });
+  });
+
+  function updateStepButton(stepId){
+    const list = document.querySelector(`.verify-list[data-step="${stepId}"]`);
+    const boxes = list ? Array.from(list.querySelectorAll('input[type="checkbox"]')) : [];
+    const allChecked = boxes.length > 0 && boxes.every(b=>b.checked);
+    const btn = document.querySelector(`.step-done-btn[data-step="${stepId}"]`);
+    if(btn && !doneState[stepId]){ btn.disabled = !allChecked; }
+  }
+
+  function render(){
+    const currentIdx = firstNotDone();
+    STEPS.forEach((id, i)=>{
+      const isDone = !!doneState[id];
+      const isLocked = i > currentIdx;
+      sections[i].classList.toggle('done', isDone);
+      sections[i].classList.toggle('current', i === currentIdx);
+      sections[i].classList.toggle('locked', isLocked);
+      stepperItems[i].classList.toggle('done', isDone);
+      stepperItems[i].classList.toggle('current', i === currentIdx);
+      stepperItems[i].classList.toggle('locked', isLocked);
+      updateStepButton(id);
+    });
+    document.querySelectorAll('.step-done-btn').forEach(btn=>{
+      const id = btn.dataset.step;
+      btn.classList.toggle('on', !!doneState[id]);
+      if(doneState[id]){ btn.disabled = false; btn.textContent = '✓ Paso completado (clic para desmarcar)'; }
+      else { btn.textContent = btn.dataset.label; }
+    });
+    const doneCount = STEPS.filter(id=>doneState[id]).length;
+    document.getElementById('progressLabel').textContent = `${doneCount}/${STEPS.length} pasos`;
+    document.getElementById('progressFill').style.width = (doneCount/STEPS.length*100)+'%';
+  }
+
+  document.querySelectorAll('.step-done-btn').forEach(btn=>{ btn.dataset.label = btn.textContent; });
+
+  document.querySelectorAll('.step-done-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = btn.dataset.step;
+      const wasDone = !!doneState[id];
+      if(!wasDone && btn.disabled) return;
+      doneState[id] = !wasDone;
+      saveDone(); render();
+      if(!wasDone && btn.dataset.next){
+        const target = document.getElementById(btn.dataset.next);
+        if(target) target.scrollIntoView({behavior:'smooth', block:'start'});
+      }
+    });
+  });
+
+  stepperItems.forEach(item=>{
+    item.addEventListener('click', ()=>{
+      const target = document.getElementById(item.dataset.target);
+      if(target) target.scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  });
+
+  render();
+})();
+</script>
