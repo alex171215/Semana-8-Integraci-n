@@ -1,13 +1,13 @@
 {
   "name": "semana-8-kong-gateway-bff",
   "version": "1.0.0",
-  "description": "Taller Semana 8: Kong Gateway DB-less, Rate-limiting, Trazabilidad y Patrón BFF/Aggregator REST+GraphQL en NestJS",
+  "description": "Taller Semana 8: Kong Gateway DB-less, Rate-limiting, Trazabilidad y Patr\u00f3n BFF/Aggregator REST+GraphQL en NestJS",
   "author": "alex171215",
   "license": "MIT",
   "scripts": {
     "build": "nest build",
     "start": "ts-node src/main-unified.ts",
-    "start:prod": "node dist/main-unified.js",
+    "start:prod": "node dist/src/main-unified.js",
     "start:productos": "ts-node src/productos-api/main.ts",
     "start:bff": "ts-node src/bff-api/main.ts",
     "start:dev": "ts-node src/main-unified.ts",
